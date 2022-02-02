@@ -165,6 +165,12 @@ static inline iree_timeout_t iree_timeout_min(iree_timeout_t lhs,
   return iree_make_deadline(lhs.nanos < rhs.nanos ? lhs.nanos : rhs.nanos);
 }
 
+// Waits until |deadline_ns| (or longer), putting the calling thread to sleep.
+// The precision of this varies across platforms and may have a minimum
+// granularity anywhere between microsecond to milliseconds.
+// Returns true if the sleep completed successfully and false if it was aborted.
+bool iree_wait_until(iree_time_t deadline_ns);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus

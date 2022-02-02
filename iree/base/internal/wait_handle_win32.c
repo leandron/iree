@@ -443,11 +443,13 @@ void iree_event_deinitialize(iree_event_t* event) {
 }
 
 void iree_event_set(iree_event_t* event) {
-  SetEvent((HANDLE)event->value.win32.handle);
+  HANDLE handle = (HANDLE)event->value.win32.handle;
+  if (handle) SetEvent(handle);
 }
 
 void iree_event_reset(iree_event_t* event) {
-  ResetEvent((HANDLE)event->value.win32.handle);
+  HANDLE handle = (HANDLE)event->value.win32.handle;
+  if (handle) ResetEvent(handle);
 }
 
 #endif  // IREE_WAIT_API == IREE_WAIT_API_WIN32
