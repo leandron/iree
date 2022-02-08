@@ -15,31 +15,37 @@
 
 namespace {
 
+// NOTE: we intentionally perform most signaling to/from C++ std::threads.
+// This models a real application that may be passing in handles tied to custom
+// or system primitives unrelated to the task system.
+
 class TaskWaitTest : public TaskTest {};
 
-TEST_F(TaskWaitTest, DISABLED_IssueSignaled) {
+TEST_F(TaskWaitTest, IssueSignaled) {
   iree_event_t event;
   iree_event_initialize(/*initial_state=*/true, &event);
 
   iree_task_wait_t task;
-  iree_task_wait_initialize(&scope_, event, &task);
+  iree_task_wait_initialize(&scope_, iree_event_await(&event),
+                            IREE_TIME_INFINITE_FUTURE, &task);
 
   IREE_ASSERT_OK(SubmitTasksAndWaitIdle(&task.header, &task.header));
 
   iree_event_deinitialize(&event);
 }
 
-TEST_F(TaskWaitTest, DISABLED_IssueUnsignaled) {
+TEST_F(TaskWaitTest, IssueUnsignaled) {
   iree_event_t event;
   iree_event_initialize(/*initial_state=*/false, &event);
 
   iree_task_wait_t task;
-  iree_task_wait_initialize(&scope_, event, &task);
+  iree_task_wait_initialize(&scope_, iree_event_await(&event),
+                            IREE_TIME_INFINITE_FUTURE, &task);
 
   // Spin up a thread that will signal the event after we start waiting on it.
   std::atomic<bool> has_signaled = {false};
   std::thread signal_thread([&]() {
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    std::this_thread::sleep_for(std::chrono::milliseconds(250));
     EXPECT_FALSE(has_signaled);
     has_signaled = true;
     iree_event_set(&event);
@@ -52,6 +58,8 @@ TEST_F(TaskWaitTest, DISABLED_IssueUnsignaled) {
   signal_thread.join();
   iree_event_deinitialize(&event);
 }
+
+// sleep
 
 // TODO(benvanik): multi-waits: join wait a/b/c to task d.
 // TODO(benvanik): multi-waits: co-issue wait a/b/c to task d/e/f.
